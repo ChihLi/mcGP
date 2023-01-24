@@ -19,7 +19,7 @@ membrane based on Poisson’s equation. The data is provided in this
 package, which can be loaded by `data(poisson_dat)`. More details about
 the dataset can be found by `help(poisson_dat)`.
 
-##### load data
+### load data
 
 We see that `X` is the input data which is one dimensional and has five
 observations. `S` is the mesh specification, which is two dimensional
@@ -52,7 +52,7 @@ print(dim(Y)) # outputs at these mesh nodes: sample size is 5; 401 outputs at me
 
     ## [1] 401   5
 
-##### Visualize two training examples
+### Visualize two training examples
 
 Plot the output data of $x=-0.8$ and $x=0.8$.
 
@@ -77,7 +77,7 @@ pde.plot(Y[,5], S) # when x=0.8
 
 <img src="README_files/figure-gfm/unnamed-chunk-3-2.png" style="display: block; margin: auto;" />
 
-##### Model fitting
+### Model fitting
 
 Perform model fitting by `mcGP` function.
 
@@ -86,7 +86,7 @@ Perform model fitting by `mcGP` function.
 fit <- mcGP(X,Y,S)
 ```
 
-##### Prediction
+### Prediction
 
 Perform predictions by `predict.mcGP` function. We make predictions on
 the test dataset `X.test`, which is $x=-0.25$.
@@ -96,7 +96,7 @@ the test dataset `X.test`, which is $x=-0.25$.
 pred <- predict(fit, Y, xnew = X.test)
 ```
 
-##### Visualize the variational distribution
+### Visualize the variational distribution
 
 Visualize the variational distribution $q(Z)$.
 
@@ -113,7 +113,7 @@ pde.plot(fit$q_Z[,4], S)
 
 <img src="README_files/figure-gfm/unnamed-chunk-6-2.png" style="display: block; margin: auto;" />
 
-##### Visualize predictions
+### Visualize predictions
 
 ``` r
 # prediction mean
@@ -129,7 +129,7 @@ pde.plot(pred$sig2, S)
 
 <img src="README_files/figure-gfm/unnamed-chunk-7-2.png" style="display: block; margin: auto;" />
 
-##### Parallel computing
+### Parallel computing
 
 Parallel computing can be done by `parallel=TRUE`. You could specify the
 number of cores by the argument `n.cores`. More details can be found by
@@ -145,11 +145,11 @@ print(fit$time.elapsed)  # without parallel computing
 ```
 
     ##    user  system elapsed 
-    ##  22.979   0.064  23.072
+    ##  23.071   0.063  23.163
 
 ``` r
 print(fit2$time.elapsed) # with parallel computing
 ```
 
     ##    user  system elapsed 
-    ##  10.579   0.066  14.052
+    ##  10.337   0.054  13.168
