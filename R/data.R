@@ -11,7 +11,7 @@
 #' }
 #'
 #' @source {Created data to serve as an example.}
-#'
+#' 
 #' @examples
 #' data(poisson_dat)
 "poisson_dat"

@@ -1,75 +1,38 @@
-##' mcGP: mesh-grouped Gaussian process emulator for partial differential equation systems
-##' @title mcGP: mesh-grouped Gaussian process emulator for partial differential equation systems.
-##' @param X matrix designs, one per row, or list with elements:
-##' @param Y vector of all observations. If using a list with \code{X}, \code{Z} has to be ordered with respect to \code{X0}, and of length \code{sum(mult)}
-##' @param S upper bound and lower bound of the calibration parameter(s).
-##' @param VI.settings optional list specifying starting values for MLE optimization, with elements:
+##' mcGP: mesh-clustered Gaussian process emulator for partial differential equation systems
+##' @title mcGP: mesh-clustered Gaussian process emulator for partial differential equation systems.
+##' @param X an \code{n times p} matrix specifying the input data, where \code{n} is sample size and \code{p} is number of predictors.
+##' @param Y an \code{N times n} matrix specifying the outputs at the \code{N} mesh coordinates, where \code{N} is the number of mesh nodes.
+##' @param S an \code{N times n} matrix specifying the mesh coordinates.
+##' @param VI.settings a list specifying settings for the variational inference algorithm:
 ##' \itemize{
-##'  \item \code{maxit} initial value of the theta parameters to be optimized over (default to 10\% of the range determined with \code{lower} and \code{upper})
-##'  \item \code{K=10} initial value of the nugget parameter to be optimized over (based on the variance at replicates if there are any, else \code{0.1})
-##'  \item \code{reltol} initial value of the calibration parameter to be optimized over (default to the average of \code{cpara_max} and \code{cpara_min})
+##'  \item \code{maxit} maximum number of iteration for variational inference; the default is 100.
+##'  \item \code{K} maximum number of clusters; the default is 10.
+##'  \item \code{reltol} Relative convergence tolerance. The algorithm stops if it is unable to reduce the value by a factor of \code{reltol * (abs(val) + reltol)} at a step. Defaults to \code{sqrt(.Machine$double.eps)}, typically about \code{1e-8}.
 ##' }
-##' @param priors.para optional list specifying starting values for MLE optimization, with elements:
+##' @param priors.para a list specifying prior hyperparameters:
 ##' \itemize{
-##'  \item \code{alpha0=0.5} initial value of the theta parameters to be optimized over (default to 10\% of the range determined with \code{lower} and \code{upper})
-##'  \item \code{R0=NULL} initial value of the nugget parameter to be optimized over (based on the variance at replicates if there are any, else \code{0.1})
-##'  \item \code{mu0=NULL} initial value of the calibration parameter to be optimized over (default to the average of \code{cpara_max} and \code{cpara_min})
-##'  \item \code{v0=NULL} initial value of the calibration parameter to be optimized over (default to the average of \code{cpara_max} and \code{cpara_min})
-##'  \item \code{W0=NULL} initial value of the calibration parameter to be optimized over (default to the average of \code{cpara_max} and \code{cpara_min})
+##'  \item \code{alpha0} a scalar specifying concentration parameter for Dirichlet process; the default is 1.
+##'  \item \code{mu0} a vector of length \code{d} specifying the mean of the normal prior for the mean of node coordinates; the default is the sample average of the node coordinates.
+##'  \item \code{R0} a \code{d times d} matrix specifying the inverse covariance of the normal prior for the mean of node coordinates; the default is the sample inverse covariance of the node coordinates.
+##'  \item \code{v0} a scalar specifying the number of degrees of freedom of the Wishart prior for the covariance of node coordinates; the default is \code{d}, the dimension of \code{S}.
+##'  \item \code{W0} a \code{d times d} matrix specifying the matrix of the Wishart prior for the covariance of node coordinates; the default is \code{R0/d}.
 ##' }
-##' @param GP.settings optional list specifying starting values for MLE optimization, with elements:
+##' @param GP.settings a list specifying the Gaussian process settings:
 ##' \itemize{
-##'  \item \code{nu=2.5} initial value of the theta parameters to be optimized over (default to 10\% of the range determined with \code{lower} and \code{upper})
-##'  \item \code{g=sqrt(.Machine$double.eps)} initial value of the nugget parameter to be optimized over (based on the variance at replicates if there are any, else \code{0.1})
-##'  \item \code{theta.init=0.1} initial value of the calibration parameter to be optimized over (default to the average of \code{cpara_max} and \code{cpara_min})
-##'  \item \code{theta.lower=sqrt(.Machine$double.eps)} initial value of the calibration parameter to be optimized over (default to the average of \code{cpara_max} and \code{cpara_min})
-##'  \item \code{theta.upper=100} initial value of the calibration parameter to be optimized over (default to the average of \code{cpara_max} and \code{cpara_min})
+##'  \item \code{nu} smoothness parameter of the Matern kernel; the default is 2.5.
+##'  \item \code{g} nugget; the default is \code{sqrt(.Machine$double.eps)}
+##'  \item \code{theta.init} initial value of the lengthscale parameter for L-BFGS-B of \code{\link[stats]{optim}}; the default is 0.1. 
+##'  \item \code{theta.lower} lower bound of the lengthscale parameter for L-BFGS-B of \code{\link[stats]{optim}}; the default is \code{sqrt(.Machine$double.eps)}. 
+##'  \item \code{theta.upper} upper bound of the lengthscale parameter for L-BFGS-B of \code{\link[stats]{optim}}; the default is 100. 
 ##' }
-##' @param parallel=FALSE
-##' @param n.cores=detectCores()
-##' @param trace=FALSE optional matrix of known boundaries in original input space, of size 2 times \code{ncol(X)}. This is only effective when \code{orthogonal=TRUE}. The default is \code{NULL} which uses the maximum and minimum values of \code{X}.
-##' @param lower,upper optional bounds for the \code{theta} parameter (see \code{\link[hetGP]{cov_gen}} for the exact parameterization).
-##' In the multivariate case, it is possible to give vectors for bounds (resp. scalars) for anisotropy (resp. isotropy)
-##' @param known optional list of known parameters, e.g., \code{theta} or \code{g}
-##' @param covtype covariance kernel type, either 'Gaussian', 'Matern5_2' or 'Matern3_2', see \code{\link[hetGP]{cov_gen}}
-##' @param maxit maximum number of iteration for L-BFGS-B of \code{\link[stats]{optim}}
-##' @param eps jitter used in the inversion of the covariance matrix for numerical stability
-##' @param settings list with argument \code{return.Ki}, to include the inverse covariance matrix in the object for further use (e.g., prediction).
-##' @param orthogonal logical. If \code{TRUE}, an orthogonal Gaussian process will be used to model the model discrepancy, otherwise a standard Gaussian process will be used.
-##' @param f.sim a function indicating a computer model, where the input should include both input variables, \code{X}, and calibration parameter(s), \code{cpara}.
-##' @param df.sim a function indicating the gradient of \code{f.sim}. The default is \code{NULL}, which approximates the gradient numerically by \code{\link[rootSolve]{gradient}}
-##' @param MC.num a number indicating how many monte carlo samples are used to approximate a orthogonal kernel. . This is only effective when \code{orthogonal=TRUE}. The default is \code{NULL} which uses the rule of 30*\code{ncol(X)}.
-##' @return a list which is given the S3 class "\code{HomCalibrate}", with elements:
-##' \itemize{
-##' \item \code{theta}: maximum likelihood estimate of the lengthscale parameter(s),
-##' \item \code{g}: maximum likelihood estimate of the nugget variance,
-##' \item \code{trendtype}: either "\code{SK}" if \code{beta0} is given, else "\code{OK}"
-##' \item \code{beta0}: estimated trend unless given in input,
-##' \item \code{nu_hat}: plugin estimator of the variance,
-##' \item \code{ll}: log-likelihood value,
-##' \item \code{X0}, \code{Z0}, \code{Z}, \code{mult}, \code{eps}, \code{covtype}: values given in input,
-##' \item \code{call}: user call of the function
-##' \item \code{used_args}: list with arguments provided in the call
-##' \item \code{nit_opt}, \code{msg}: \code{counts} and \code{msg} returned by \code{\link[stats]{optim}}
-##' \item \code{Ki}: inverse covariance matrix (not scaled by \code{nu_hat}) (if \code{return.Ki} is \code{TRUE} in \code{settings})
-##' \item \code{time}: time to train the model, in seconds.
-##' \item \code{cpara} maximum likelihood estimate of the calibration parameter(s)
-##' \item \code{orthogonal} \code{orthogonal}
-##' \item \code{f.sim} \code{f.sim}
-##' \item \code{df.sim} \code{df.sim}
-##' \item \code{MC.num} \code{MC.num}
-##' \item \code{inputBounds} \code{inputBounds}
-##'
-##'}
-##' @importFrom plgp CholWishart parallel doParallel foreach stats cov optim var utils setTxtProgressBar txtProgressBar
-##' @details
-##' This code performs model calibration for inexact computer model under homoskedastic noise with multiple replicates. This code is modified from the source code of \code{\link[hetGP]{mleHomGP}}. We refer more details of the function to \code{\link[hetGP]{mleHomGP}}.
-##'
-##' @seealso \code{\link[HetCalibrate]{predict.homCalibrate}} for predictions.
-##' @references
-##' M. Binois, Robert B. Gramacy, M. Ludkovski (2018), Practical heteroskedastic Gaussian process modeling for large simulation experiments,
-##' Journal of Computational and Graphical Statistics, 27(4), 808--821.\cr
-##' Preprint available on arXiv:1611.05902. \cr \cr
+##' @param parallel logical. If \code{TRUE}, parallel computing is conducted; the default is \code{FALSE}.
+##' @param n.cores integer. If \code{parallel=TRUE}, it specifies how many cores will be used for parallel computing; the default is \code{\link[parallelly]{availableCores}}
+##' @param trace logical. If \code{TRUE}, the computation time of each step will be printed; the default is \code{FALSE}.
+##' 
+##' 
+##' @seealso \code{\link[mcGP]{predict.mcGP}} for predictions.
+##' 
+##' @importFrom foreach "%dopar%"
 ##' @export
 ##' @examples
 ##' \dontrun{
@@ -79,16 +42,16 @@
 ##'##### setting #####
 ##' # example: Poisson equation simulations 
 ##' # (data was generated by finite element methods via MATLAB)
-##' X <- read.csv(system.file("extdata", "X.csv", package = "mcGP"))
-##' Y <- read.csv(system.file("extdata", "Y.csv", package = "mcGP"))
-##' S <- read.csv(system.file("extdata", "S.csv", package = "mcGP"))
+##' data(poisson_dat)
+##' attach(poisson_dat)
 ##' 
 ##' print(dim(X)) # sample size is 5; one input variable
 ##' print(dim(S)) # 2-dimensional mesh; 401 mesh nodes
 ##' print(dim(Y)) # sample size is 5; 401 outputs at mesh nodes
+##' 
 ##' # visualize two training examples
 ##' pde.plot <- function(u, nodes, ...){
-##'   out <- as.image(u, x = t(nodes), nrow=128, ncol=128) 
+##'   out <- as.image(u, x = nodes, nrow=128, ncol=128)
 ##'   dx <- out$x[2] - out$x[1] 
 ##'   dy <- out$y[2] - out$y[1] 
 ##'   out <- image.smooth(out$z, dx=dx, dy=dy, theta=.25) 
@@ -110,7 +73,7 @@
 
 mcGP <- function(X, Y, S,
                  VI.settings=list(maxit=100, K=10, reltol=sqrt(.Machine$double.eps)),
-                 priors.para=list(alpha0=0.5,R0=NULL,mu0=NULL,v0=NULL,W0=NULL),
+                 priors.para=list(alpha0=1,R0=NULL,mu0=NULL,v0=NULL,W0=NULL),
                  GP.settings=list(nu=2.5, g=sqrt(.Machine$double.eps), theta.init=0.1, theta.lower=sqrt(.Machine$double.eps), theta.upper=100),
                  parallel=FALSE, n.cores=parallelly::availableCores(), trace=FALSE){
   
@@ -126,7 +89,7 @@ mcGP <- function(X, Y, S,
   
   # relative convergence tolerance
   if(is.null(VI.settings$reltol)){
-    reltol <- 1e-10
+    reltol <- sqrt(.Machine$double.eps)
   }else{
     reltol <- VI.settings$reltol
   }
@@ -145,7 +108,7 @@ mcGP <- function(X, Y, S,
   
   ##### prior setting #####
   if(is.null(priors.para$alpha0)){
-    alpha0 <- 0.5
+    alpha0 <- 1
   }else{
     alpha0 <- priors.para$alpha0
   }
@@ -216,8 +179,8 @@ mcGP <- function(X, Y, S,
   
   ##### initialization #####
   if(parallel) {
-    cl <- makeCluster(n.cores)
-    registerDoParallel(cl)
+    cl <- parallel::makeCluster(n.cores)
+    doParallel::registerDoParallel(cl)
   }
   tau2.init <- var(c(Y))
   
@@ -286,7 +249,7 @@ mcGP <- function(X, Y, S,
       E_log1_u <- digamma(b_u[1:(K-1)]) - digamma(a_u[1:(K-1)]+b_u[1:(K-1)])
       
       for(k in 1:K) {
-        E_logRk <- mvdigamma(b_R[k]/2, p) + p*log(2) + determinant(a_R[k,,],logarithm=TRUE)$modulus
+        E_logRk <- CholWishart::mvdigamma(b_R[k]/2, p) + p*log(2) + determinant(a_R[k,,],logarithm=TRUE)$modulus
         d_S <- t(S) - a_mu[k,]
 
         a_ks <- apply(d_S, 2, function(x){
@@ -315,7 +278,7 @@ mcGP <- function(X, Y, S,
     
     ##### (M) update theta ####
     if(parallel){
-      foreach.out <- foreach(k = 1:K, .packages = "plgp", .combine = "rbind", .export = "matern.kernel") %dopar% {
+      foreach.out <- foreach::foreach(k = 1:K, .packages = "plgp", .combine = "rbind", .export = "matern.kernel") %dopar% {
         neg.logl <- function(para){
           Phi <- matern.kernel(X, para, nu=nu) + g*diag(1,n)
           Phi.chol <- chol(Phi)
@@ -384,15 +347,15 @@ mcGP <- function(X, Y, S,
     ## -log(q(R_k))
     for(k in 1:K){
       entropy.q <- (p+1)/2*determinant(a_R[k,,],logarithm=TRUE)$modulus + 
-        1/2*p*(p+1)*log(2)+lmvgamma(b_R[k]/2, p)-
-        (b_R[k]-p-1)/2*mvdigamma(b_R[k]/2, p)+b_R[k]*p/2
+        1/2*p*(p+1)*log(2)+CholWishart::lmvgamma(b_R[k]/2, p)-
+        (b_R[k]-p-1)/2*CholWishart::mvdigamma(b_R[k]/2, p)+b_R[k]*p/2
       elbo[i] <- elbo[i] + entropy.q
     }
     ## -log(q(z_s))
     truncate.qZ <- pmin(pmax(q_Z,eps),1-eps)
     entropy.q <- -sum(truncate.qZ*log(truncate.qZ))
     elbo[i] <- elbo[i] + entropy.q
-    plot(1:i, elbo[1:i])
+    # plot(1:i, elbo[1:i])
     
     if(i > 1) {
       relerr <- (elbo[i] - elbo[i-1])/abs(elbo[i-1])
@@ -404,7 +367,7 @@ mcGP <- function(X, Y, S,
   setTxtProgressBar(pb, maxit)
   close(pb)
   tock <- proc.time()
-  if(parallel) stopCluster(cl)
+  if(parallel) parallel::stopCluster(cl)
   
   out <- list(theta=theta,tau2=tau2,nu=nu,g=g,q_Z=q_Z,X=X,  
               d=d,p=p,n=n,N=N, elbo=elbo, time.elapsed=tock-tick, 

@@ -3,15 +3,15 @@ matern.kernel <- function(X,para,nu,x=NULL,
   
   if(para.arg=="theta"){
     if(is.null(x)){
-      r <- sqrt(distance(t(t(X)/para)))
+      r <- sqrt(plgp::distance(t(t(X)/para)))
     }else{
-      r <- sqrt(distance(t(t(X)/para), t(t(x)/para)))
+      r <- sqrt(plgp::distance(t(t(X)/para), t(t(x)/para)))
     }
   }else{
     if(is.null(x)){
-      r <- sqrt(distance(t(t(X)*sqrt(-log(para)))))
+      r <- sqrt(plgp::distance(t(t(X)*sqrt(-log(para)))))
     }else{
-      r <- sqrt(distance(t(t(X)*sqrt(-log(para))), t(t(x)*sqrt(-log(para)))))
+      r <- sqrt(plgp::distance(t(t(X)*sqrt(-log(para))), t(t(x)*sqrt(-log(para)))))
     }
   }
   

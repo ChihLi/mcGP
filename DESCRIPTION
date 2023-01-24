@@ -1,11 +1,10 @@
 Package: mcGP
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Mesh-clustered Gaussian process emulator
 Version: 0.1.0
 Author: Chih-Li Sung
 Maintainer: Chih-Li Sung <iamdfchile@gmail.com>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
+Description: This R package allows the emulation using a mesh-clustered Gaussian process (mcGP) model for partial differential equation (PDE) systems. More details can be seen in Sung, Wang, Ding, and Wang (2023).
 License: GPL-2 | GPL-3
 Encoding: UTF-8
 LazyData: true
@@ -16,5 +15,6 @@ Imports:
     plgp,
     CholWishart, 
     parallelly,
+    parallel,
     doParallel,
     foreach
