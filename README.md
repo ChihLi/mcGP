@@ -1,11 +1,12 @@
 mcGP package
 ================
 Chih-Li Sung
-January 24, 2023
+January 25, 2023
 
 This R package allows the emulation using a mesh-clustered Gaussian
 process (mcGP) model for partial differential equation (PDE) systems.
-More details can be seen in Sung, Wang, Ding, and Wang (2023).
+More details can be seen in [Sung, Wang, Ding, and Wang
+(2023)](https://arxiv.org/abs/2301.10387).
 
 You can install the package using `install_github` function as follows:
 
@@ -145,11 +146,11 @@ print(fit$time.elapsed)  # without parallel computing
 ```
 
     ##    user  system elapsed 
-    ##  23.071   0.063  23.163
+    ##  22.808   0.078  23.201
 
 ``` r
 print(fit2$time.elapsed) # with parallel computing
 ```
 
     ##    user  system elapsed 
-    ##  10.337   0.054  13.168
+    ##  10.349   0.058  13.410
