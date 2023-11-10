@@ -1,7 +1,7 @@
 mcGP package
 ================
 Chih-Li Sung
-January 25, 2023
+November 10, 2023
 
 This R package allows the emulation using a mesh-clustered Gaussian
 process (mcGP) model for partial differential equation (PDE) systems.
@@ -84,6 +84,7 @@ Perform model fitting by `mcGP` function.
 
 ``` r
 # model fitting
+set.seed(123) # for reproducibility
 fit <- mcGP(X,Y,S)
 ```
 
@@ -109,10 +110,34 @@ pde.plot(fit$q_Z[,1], S)
 <img src="README_files/figure-gfm/unnamed-chunk-6-1.png" style="display: block; margin: auto;" />
 
 ``` r
-pde.plot(fit$q_Z[,4], S)
+pde.plot(fit$q_Z[,2], S)
 ```
 
 <img src="README_files/figure-gfm/unnamed-chunk-6-2.png" style="display: block; margin: auto;" />
+
+``` r
+pde.plot(fit$q_Z[,4], S)
+```
+
+<img src="README_files/figure-gfm/unnamed-chunk-6-3.png" style="display: block; margin: auto;" />
+
+``` r
+pde.plot(fit$q_Z[,5], S)
+```
+
+<img src="README_files/figure-gfm/unnamed-chunk-6-4.png" style="display: block; margin: auto;" />
+
+``` r
+pde.plot(fit$q_Z[,6], S)
+```
+
+<img src="README_files/figure-gfm/unnamed-chunk-6-5.png" style="display: block; margin: auto;" />
+
+``` r
+pde.plot(fit$q_Z[,7], S)
+```
+
+<img src="README_files/figure-gfm/unnamed-chunk-6-6.png" style="display: block; margin: auto;" />
 
 ### Visualize predictions
 
@@ -146,11 +171,11 @@ print(fit$time.elapsed)  # without parallel computing
 ```
 
     ##    user  system elapsed 
-    ##  22.808   0.078  23.201
+    ##   9.506   0.052   9.638
 
 ``` r
 print(fit2$time.elapsed) # with parallel computing
 ```
 
     ##    user  system elapsed 
-    ##  10.349   0.058  13.410
+    ##   7.946   0.075  10.137

@@ -33,6 +33,7 @@
 ##' @seealso \code{\link[mcGP]{predict.mcGP}} for predictions.
 ##' 
 ##' @importFrom foreach "%dopar%"
+##' @importFrom LaplacesDemon "rdirichlet"
 ##' @export
 ##' @examples
 ##' \dontrun{
@@ -73,7 +74,7 @@
 
 mcGP <- function(X, Y, S,
                  VI.settings=list(maxit=100, K=10, reltol=sqrt(.Machine$double.eps)),
-                 priors.para=list(alpha0=1,R0=NULL,mu0=NULL,v0=NULL,W0=NULL),
+                 priors.para=list(alpha0=0.1,R0=NULL,mu0=NULL,v0=NULL,W0=NULL),
                  GP.settings=list(nu=2.5, g=sqrt(.Machine$double.eps), theta.init=0.1, theta.lower=sqrt(.Machine$double.eps), theta.upper=100),
                  parallel=FALSE, n.cores=parallelly::availableCores(), trace=FALSE){
   
@@ -186,8 +187,8 @@ mcGP <- function(X, Y, S,
   
   theta <- matrix(theta.init, ncol=d, nrow=K)
   tau2 <- rep(tau2.init, K)
-  q_Z <- matrix(c(1,rep(0,K-1)),ncol=K,nrow=N,byrow=TRUE) #q(Z=1)=1 and q(Z=k)=0 for k=2,...,K
-  
+  # q_Z <- matrix(c(1,rep(0,K-1)),ncol=K,nrow=N,byrow=TRUE) #q(Z=1)=1 and q(Z=k)=0 for k=2,...,K
+  q_Z <- LaplacesDemon::rdirichlet(N, rep(alpha0,K)) # random start
   a_u <- rep(1,K)
   b_u <- rep(0,K)
   a_mu <- matrix(0, ncol=p, nrow=K)
@@ -273,7 +274,7 @@ mcGP <- function(X, Y, S,
       tock4 <- proc.time()
       if(trace) cat("== update q(z_s):", (tock4 - tock3)[3], "second==\n")
     }  
-    
+
     Z <- apply(q_Z,1,which.max)
     
     ##### (M) update theta ####
@@ -334,7 +335,7 @@ mcGP <- function(X, Y, S,
     
     tock5 <- proc.time()
     if(trace) cat("== M-step: estimating theta and tau2:", (tock5 - tock4)[3], "seconds ==\n")
-    
+
     ##### ELBO ####
     ## -log(q(u))
     entropy.q <- lbeta(a_u,b_u)[1:(K-1)] - (a_u[1:(K-1)]-1)*E_logu[1:(K-1)] - (b_u[1:(K-1)]-1)*E_log1_u
@@ -355,7 +356,7 @@ mcGP <- function(X, Y, S,
     truncate.qZ <- pmin(pmax(q_Z,eps),1-eps)
     entropy.q <- -sum(truncate.qZ*log(truncate.qZ))
     elbo[i] <- elbo[i] + entropy.q
-    # plot(1:i, elbo[1:i])
+    if(trace) plot(1:i, elbo[1:i], type="b", xlab="iteration", ylab="elbo")
     
     if(i > 1) {
       relerr <- (elbo[i] - elbo[i-1])/abs(elbo[i-1])

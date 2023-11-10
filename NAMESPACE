@@ -3,6 +3,5 @@
 S3method(predict,mcGP)
 export(mcGP)
 export(predict.mcGP)
-importFrom(CholWishart,mvdigamma)
-importFrom(plgp,distance)
+importFrom(LaplacesDemon,"rdirichlet")
 importFrom(foreach,"%dopar%")
