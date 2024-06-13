@@ -6,7 +6,7 @@ November 10, 2023
 This R package allows the emulation using a mesh-clustered Gaussian
 process (mcGP) model for partial differential equation (PDE) systems.
 More details can be seen in [Sung, Wang, Ding, and Wang
-(2023)](https://arxiv.org/abs/2301.10387).
+(2024)](https://doi.org/10.1080/00401706.2024.2320211).
 
 You can install the package using `install_github` function as follows:
 
